@@ -2,14 +2,13 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8"/>
-<link rel="manifest" href="/manifest.json">
+<link rel="manifest" href="/ascension-method/manifest.json">
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="apple-mobile-web-app-title" content="Ascension">
 <meta name="theme-color" content="#111110">
-<link rel="apple-touch-icon" href="/icons/icon-192.png">
-<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<link rel="apple-touch-icon" href="/ascension-method/icons/icon-192.png">
 <title>The Ascension Method</title>
 
 <style>
@@ -2457,8 +2456,8 @@ renderFE();
 <script>
 if('serviceWorker' in navigator){
   window.addEventListener('load', () => {
-    navigator.serviceWorker.register('/service-worker.js')
-      .then(reg => console.log('Ascension SW registered:', reg.scope))
+    navigator.serviceWorker.register('/ascension-method/service-worker.js')
+      .then(reg => console.log('SW registered'))
       .catch(err => console.log('SW error:', err));
   });
 }
