@@ -4,7 +4,7 @@
   "description": "Daily discipline system — Resistance, Growth, Momentum",
 "start_url": "/ascension-method/index.html",
 "scope": "/ascension-method/",
-  "display": "standalone",
+  "display": "fullscreen",
   "orientation": "portrait",
   "background_color": "#111110",
   "theme_color": "#111110",
