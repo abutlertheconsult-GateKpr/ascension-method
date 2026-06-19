@@ -123,6 +123,36 @@ body{font-family:var(--font-b);background:var(--off-white);color:var(--black);mi
 .mt-prompt-text{font-family:var(--font-b);font-size:14px;font-style:italic;color:rgba(255,255,255,0.88);line-height:1.6}
 .mt-prompt-dismiss{margin-top:8px;background:transparent;border:1px solid rgba(255,255,255,0.2);color:rgba(255,255,255,0.5);font-family:var(--font-o);font-size:10px;font-weight:400;letter-spacing:0.14em;text-transform:uppercase;padding:4px 12px;cursor:pointer;transition:all 0.14s}
 .mt-prompt-dismiss:hover{border-color:rgba(255,255,255,0.5);color:var(--white)}
+
+/* AMBIENT RED DOT PULSE - LEFT OF DROPDOWN */
+.ftask-card.ambient-pulse::before {
+  content: '';
+  position: absolute;
+  top: 26px;          /* Brought up slightly closer to the arrow */
+  right: 14px;        /* Keeps it centered with the dropdown icon */
+  width: 8px;
+  height: 8px;
+  background-color: var(--danger);
+  border-radius: 50%;
+  animation: redDotPulse 1.8s infinite ease-in-out;
+  z-index: 2;
+}
+
+@keyframes redDotPulse {
+  0% {
+    transform: scale(0.8);
+    box-shadow: 0 0 0 0 rgba(192, 57, 43, 0.7);
+  }
+  70% {
+    transform: scale(1);
+    box-shadow: 0 0 0 6px rgba(192, 57, 43, 0);
+  }
+  100% {
+    transform: scale(0.8);
+    box-shadow: 0 0 0 0 rgba(192, 57, 43, 0);
+  }
+}
+
 /* LIBRARY SWIPE */
 .lib-swipe-wrap{position:relative;overflow:hidden;margin-bottom:6px}
 .lib-swipe-front{position:relative;z-index:1;transform:translateX(0);transition:transform 0.25s cubic-bezier(.16,1,.3,1);touch-action:pan-y}
@@ -1735,6 +1765,9 @@ function buildFocusTaskCard(t){
   wrap.appendChild(bg);
   // Front card
   const card=document.createElement('div');card.className='swipe-front ftask-card';card.id='fc-'+t.id;
+  if(t.score >= 65 && t.riseScore >= 70){
+    card.classList.add('ambient-pulse');
+  }
   const now=new Date();const dl=t.deadline?new Date(t.deadline+'T23:59:59'):null;
   const daysUntil=dl?Math.ceil((dl-now)/(1000*60*60*24)):null;
   let dlHtml='';
@@ -2628,7 +2661,7 @@ function swConfirm(){
 function swOverlayClick(e){if(e.target===document.getElementById('swOverlay'))document.getElementById('swOverlay').classList.remove('open');}
 
 const RISE_PATTERNS=[
-  'Fear of failure','Fear of rejection','Fear of conflict','Fear of uncertainty','Perfectionism','Laziness','Avoidance','People pleasing','Discomfort with grief','Lack of confidence','Desire for immediate comfort','Distraction seeking','Indecision','Emotional avoidance'
+  'Fear of failure','Fear of rejection','Fear of conflict','Fear of uncertainty','Perfectionism','Laziness','Avoidance','People pleasing','Discomfort','Lack of confidence','Desire for immediate comfort','Large Time Consumption','Large Cognitive Demand','Requires Additional Learning','Distraction seeking','Indecision','Emotional avoidance'
 ];
 let riseState={taskId:null,step:0,scores:{resistance:null,impact:null,stake:null,elevation:null},patternPrimary:null,patternSecondary:null,insight:'',firstStep:'',nextAction:'',expectedBenefit:''};
 function riseBandClass(score){if(score==null)return'';if(score>=18)return'donow';if(score>=14)return'high';if(score>=10)return'medium';return'low';}
