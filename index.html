@@ -915,6 +915,23 @@ body{font-family:var(--font-b);background:var(--off-white);color:var(--black);mi
   </div>
 </div>
 
+<!-- AI ROUTER MODAL  -->
+<div id="aiRouterOverlay" class="tp-overlay">
+  <div class="tp-modal" style="border-top-color: var(--grow);">
+    <div class="tp-title">Tap the AI you would like to use</div>
+    <div class="tp-subtitle">Your prompt is copied to your clipboard and ready to paste.</div>
+    
+    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin: 20px 0;">
+      <a href="https://chatgpt.com" target="_blank" class="dash-btn" style="text-align: center; text-decoration: none; border-radius: 8px;">ChatGPT</a>
+      <a href="https://claude.ai" target="_blank" class="dash-btn" style="text-align: center; text-decoration: none; border-radius: 8px;">Claude</a>
+      <a href="https://gemini.google.com" target="_blank" class="dash-btn" style="text-align: center; text-decoration: none; border-radius: 8px;">Gemini</a>
+      <a href="https://copilot.microsoft.com" target="_blank" class="dash-btn" style="text-align: center; text-decoration: none; border-radius: 8px;">Copilot</a>
+    </div>
+
+    <button type="button" class="tp-btn-cancel" style="width: 100%; border-radius: 8px;" onclick="closeAiRouterModal()">Close</button>
+  </div>
+</div>
+
 <!-- MONTHLY SUMMARY MODAL -->
 <div class="modal-overlay" id="monthlySummaryModal" onclick="closeMonthlySummaryModal(event)">
   <div class="modal">
@@ -2157,10 +2174,27 @@ function copyAiPromptModal(){
   const promptArea=document.getElementById('aiPromptModalText');
   if(!promptArea||!promptArea.value){showToast('No prompt available to copy.');return;}
   if(navigator.clipboard&&navigator.clipboard.writeText){
-    navigator.clipboard.writeText(promptArea.value).then(()=>showToast('AI prompt copied to clipboard.')).catch(()=>showToast('Could not copy prompt.'));
+    navigator.clipboard.writeText(promptArea.value).then(()=>{
+      showToast('AI prompt copied to clipboard.');
+      // --- TRIGGER NEW MODAL FOR MODERN BROWSERS ---
+      openAiRouterModal();
+    }).catch(()=>showToast('Could not copy prompt.'));
   } else {
-    promptArea.select(); document.execCommand('copy'); showToast('AI prompt copied to clipboard.');
+    promptArea.select(); 
+    document.execCommand('copy'); 
+    showToast('AI prompt copied to clipboard.');
+    // --- TRIGGER NEW MODAL FOR OLDER FALLBACK BROWSERS ---
+    openAiRouterModal();
   }
+}
+
+// Call this function at the end of your successful copy execution
+function openAiRouterModal() {
+  document.getElementById('aiRouterOverlay').classList.add('open');
+}
+
+function closeAiRouterModal() {
+  document.getElementById('aiRouterOverlay').classList.remove('open');
 }
 
 function openReportModal(){
