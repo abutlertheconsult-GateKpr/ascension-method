@@ -1088,6 +1088,30 @@ body{font-family:var(--font-b);background:var(--off-white);color:var(--black);mi
 </div>
 <input type="file" id="settingsImportInput" accept="application/json" style="display:none" onchange="handleSettingsImport(event)" />
 
+<!-- IMPORT REVIEW MODAL -->
+<div class="modal-overlay" id="importReviewModal" onclick="closeImportReview(event)">
+  <div class="modal" style="max-width:520px">
+    <div class="modal-handle"></div>
+    <div class="modal-title"><span>Review Import</span><button class="modal-close" onclick="rejectImportReview()">×</button></div>
+    <div id="importReviewFile" style="font-family:var(--font-o);font-size:11px;color:var(--ash);margin-bottom:10px"></div>
+    <div style="display:grid;grid-template-columns:minmax(0,1fr) 70px 70px;gap:7px;padding:8px 0;border-top:1px solid var(--rule);border-bottom:1px solid var(--rule)">
+      <div style="font-family:var(--font-o);font-size:10px;font-weight:600;text-transform:uppercase;color:var(--ash)">Data</div>
+      <div style="font-family:var(--font-o);font-size:10px;font-weight:600;text-transform:uppercase;color:var(--ash);text-align:right">Current</div>
+      <div style="font-family:var(--font-o);font-size:10px;font-weight:600;text-transform:uppercase;color:var(--ash);text-align:right">Import</div>
+      <div style="font-family:var(--font-b);font-size:13px">Focus tasks</div><div id="importCurrentTasks" style="text-align:right"></div><div id="importFileTasks" style="text-align:right"></div>
+      <div style="font-family:var(--font-b);font-size:13px">Library records</div><div id="importCurrentLibrary" style="text-align:right"></div><div id="importFileLibrary" style="text-align:right"></div>
+      <div style="font-family:var(--font-b);font-size:13px">Archived tasks</div><div id="importCurrentArchive" style="text-align:right"></div><div id="importFileArchive" style="text-align:right"></div>
+      <div style="font-family:var(--font-b);font-size:13px">Protocol days</div><div id="importCurrentDays" style="text-align:right"></div><div id="importFileDays" style="text-align:right"></div>
+      <div style="font-family:var(--font-b);font-size:13px">Reflections</div><div id="importCurrentReflections" style="text-align:right"></div><div id="importFileReflections" style="text-align:right"></div>
+    </div>
+    <div id="importReviewDate" style="font-family:var(--font-b);font-size:13px;line-height:1.5;margin-top:12px"></div>
+    <div style="display:flex;gap:8px;margin-top:14px">
+      <button class="dash-btn" style="flex:1;background:var(--ash)" onclick="rejectImportReview()">Reject</button>
+      <button class="dash-btn" style="flex:1;background:var(--rust)" onclick="confirmImportReview()">Import This File</button>
+    </div>
+  </div>
+</div>
+
 <!-- BACKUP PROMPT MODAL -->
 <div class="modal-overlay" id="backupPromptModal" onclick="closeBackupPromptModal(event)">
   <div class="modal">
@@ -4438,6 +4462,67 @@ if(typeof window.openSettingsModal !== 'function'){
     if(typeof window.showToast==='function')showToast('Settings saved');
   };
 }
+let pendingImportData=null;
+let pendingImportFileName='';
+function importDataSummary(state){
+  state=state&&typeof state==='object'?state:{};
+  const library=state.library&&typeof state.library==='object'?Object.keys(state.library).length:0;
+  const archive=Array.isArray(state.focusArchive)?state.focusArchive.length:0;
+  const focusTasks=Array.isArray(state.focusTasks)?state.focusTasks.length:0;
+  const days=state.days&&typeof state.days==='object'?state.days:{};
+  const dayKeys=Object.keys(days);
+  let reflections=0;
+  let dailyTaskEntries=0;
+  dayKeys.forEach(key=>{
+    const day=days[key]||{};
+    if(day.reflection&&(day.reflection.saved||day.reflection.q1||day.reflection.q2||day.reflection.q3||day.reflection.q4||day.reflection.q5))reflections++;
+    if(day.tasks&&typeof day.tasks==='object')dailyTaskEntries+=Object.values(day.tasks).reduce((total,items)=>total+(Array.isArray(items)?items.length:0),0);
+  });
+  return{focusTasks,library,archive,days:dayKeys.length,reflections,dailyTaskEntries};
+}
+function formatImportDate(value){
+  if(!value)return'Unknown export date';
+  const date=new Date(value);
+  return isNaN(date.getTime())?'Unknown export date':date.toLocaleString([], {year:'numeric',month:'long',day:'numeric',hour:'numeric',minute:'2-digit'});
+}
+if(typeof window.exportAppData !== 'function'){
+  window.exportAppData=function(){
+    let current={};
+    try{current=JSON.parse(localStorage.getItem('ascension_v4')||'{}')}catch(e){current={};}
+    const exported={exportFormatVersion:2,exportedAt:new Date().toISOString(),appData:current};
+    const blob=new Blob([JSON.stringify(exported,null,2)],{type:'application/json'});
+    const url=URL.createObjectURL(blob);
+    const link=document.createElement('a');link.href=url;link.download='ascension-method-'+new Date().toISOString().slice(0,10)+'.json';
+    document.body.appendChild(link);link.click();document.body.removeChild(link);URL.revokeObjectURL(url);
+  };
+}
+if(typeof window.triggerImportData !== 'function')window.triggerImportData=function(){document.getElementById('settingsImportInput')?.click();};
+if(typeof window.closeImportReview !== 'function')window.closeImportReview=function(event){const modal=document.getElementById('importReviewModal');if(modal&&event&&event.target===modal)modal.classList.remove('open');};
+if(typeof window.rejectImportReview !== 'function')window.rejectImportReview=function(){document.getElementById('importReviewModal')?.classList.remove('open');pendingImportData=null;pendingImportFileName='';const input=document.getElementById('settingsImportInput');if(input)input.value='';};
+if(typeof window.confirmImportReview !== 'function')window.confirmImportReview=function(){if(!pendingImportData)return;localStorage.setItem('ascension_v4',JSON.stringify(pendingImportData));rejectImportReview();location.reload();};
+if(typeof window.handleSettingsImport !== 'function')window.handleSettingsImport=function(event){
+  const file=event.target.files&&event.target.files[0];if(!file)return;pendingImportFileName=file.name;
+  const reader=new FileReader();reader.onload=function(){
+    try{
+      const parsed=JSON.parse(reader.result);const imported=parsed&&parsed.appData&&typeof parsed.appData==='object'?parsed.appData:parsed;
+      if(!imported||typeof imported!=='object'||Array.isArray(imported))throw new Error('Invalid app data');
+      let current={};try{current=JSON.parse(localStorage.getItem('ascension_v4')||'{}')}catch(e){current={};}
+      pendingImportData=imported;
+      const fileSummary=importDataSummary(imported);const currentSummary=importDataSummary(current);
+      document.getElementById('importReviewFile').textContent='FILE: '+file.name+' • '+Math.max(1,Math.round(file.size/1024))+' KB';
+      document.getElementById('importCurrentTasks').textContent=currentSummary.focusTasks;document.getElementById('importFileTasks').textContent=fileSummary.focusTasks;
+      document.getElementById('importCurrentLibrary').textContent=currentSummary.library;document.getElementById('importFileLibrary').textContent=fileSummary.library;
+      document.getElementById('importCurrentArchive').textContent=currentSummary.archive;document.getElementById('importFileArchive').textContent=fileSummary.archive;
+      document.getElementById('importCurrentDays').textContent=currentSummary.days;document.getElementById('importFileDays').textContent=fileSummary.days;
+      document.getElementById('importCurrentReflections').textContent=currentSummary.reflections;document.getElementById('importFileReflections').textContent=fileSummary.reflections;
+      const sourceDate=parsed.exportedAt||file.lastModified;
+      document.getElementById('importReviewDate').innerHTML='<strong>Imported file date:</strong> '+formatImportDate(sourceDate)+'<br><strong>Daily task entries:</strong> '+fileSummary.dailyTaskEntries+'<br><span style="color:var(--ash)">Importing replaces the current data on this device.</span>';
+      document.getElementById('importReviewModal')?.classList.add('open');
+      document.getElementById('settingsModal')?.classList.remove('open');
+    }catch(error){if(typeof window.showToast==='function')showToast('Invalid import file');else alert('Invalid import file');}
+  };reader.readAsText(file);
+};
+
 if(typeof window.switchView !== 'function'){
   window.switchView=function(id,button){
     const view=document.getElementById('view-'+id);
