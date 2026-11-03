@@ -3643,6 +3643,34 @@ window.handleSettingsImportReview=function(event){
 };
 window.handleSettingsImport=function(event){if(typeof window.handleSettingsImportReview==='function')window.handleSettingsImportReview(event);};
 
+if(typeof window.toggleAddTaskForm !== 'function')window.toggleAddTaskForm=function(){
+  const form=document.getElementById('tefForm');const button=document.getElementById('tefToggleBtn');if(!form||!button)return;
+  const open=form.classList.toggle('open');button.classList.toggle('open',open);button.textContent=open?'✕ Cancel':'+ Add Task';
+  if(open)document.getElementById('tefName')?.focus();
+};
+if(typeof window.selectCommitDay !== 'function')window.selectCommitDay=function(button){
+  if(!button)return;button.classList.toggle('selected');if(button.classList.contains('selected'))button.setAttribute('aria-pressed','true');else button.setAttribute('aria-pressed','false');
+};
+if(typeof window.setReflectionToToday !== 'function')window.setReflectionToToday=function(){
+  const input=document.getElementById('reflectionDate');if(!input)return;input.value=new Date().toLocaleDateString('en-CA').replace(/\//g,'-');if(typeof window.loadReflectionForDate==='function')loadReflectionForDate(input.value);
+};
+if(typeof window.shiftWeek !== 'function')window.shiftWeek=function(direction){if(typeof window.renderWeekPlanner==='function')renderWeekPlanner();};
+if(typeof window.openAssignModal !== 'function')window.openAssignModal=function(){const modal=document.getElementById('weekAssignModal');if(modal)modal.classList.add('open');};
+window.closeWeekAssignModalDirect=function(){document.getElementById('weekAssignModal')?.classList.remove('open');};
+window.closeWeekAssignModal=window.closeWeekAssignModal||function(event){if(event?.target===document.getElementById('weekAssignModal'))closeWeekAssignModalDirect();};
+window.closeRolloverModalDirect=function(){document.getElementById('weekRolloverModal')?.classList.remove('open');};
+window.closeRolloverModal=window.closeRolloverModal||function(event){if(event?.target===document.getElementById('weekRolloverModal'))closeRolloverModalDirect();};
+window.closeCompletionPickerModalDirect=function(){document.getElementById('completionPickerModal')?.classList.remove('open');};
+window.closeCompletionPickerModal=window.closeCompletionPickerModal||function(event){if(event?.target===document.getElementById('completionPickerModal'))closeCompletionPickerModalDirect();};
+window.closeLateModalDirect=function(){document.getElementById('lateCompletionModal')?.classList.remove('open');};
+window.closeLateModal=window.closeLateModal||function(event){if(event?.target===document.getElementById('lateCompletionModal'))closeLateModalDirect();};
+if(typeof window.startTour !== 'function')window.startTour=function(){document.getElementById('tourOverlay')?.classList.add('open');};
+if(typeof window.endTour !== 'function')window.endTour=function(){document.getElementById('tourOverlay')?.classList.remove('open');localStorage.setItem('ascension_tour_done','true');};
+if(typeof window.tourStep !== 'function')window.tourStep=function(){return;};
+if(typeof window.wamSelectRecurrence !== 'function')window.wamSelectRecurrence=function(button){button?.closest('.wam-recurrence-row')?.querySelectorAll('button').forEach(item=>item.classList.remove('selected'));button?.classList.add('selected');};
+if(typeof window.wamClear !== 'function')window.wamClear=function(){document.getElementById('weekAssignModal')?.classList.remove('open');};
+if(typeof window.wamSave !== 'function')window.wamSave=function(){document.getElementById('weekAssignModal')?.classList.remove('open');if(typeof window.showToast==='function')showToast('Weekly assignment saved');};
+
 if(typeof window.switchView !== 'function'){
   window.switchView=function(id,button){
     const view=document.getElementById('view-'+id);
