@@ -1074,6 +1074,18 @@ body{font-family:var(--font-b);background:var(--off-white);color:var(--black);mi
       <label class="settings-toggle"><input type="checkbox" id="settingsMonthlyReport"/> Monthly report summary</label>
     </div>
     <div class="dash-modal-section">
+      <div class="do-title">AI Assistants</div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:7px;margin-bottom:10px">
+        <label class="settings-toggle"><input type="checkbox" id="settingsAiChatGPT" value="chatgpt"/> ChatGPT</label>
+        <label class="settings-toggle"><input type="checkbox" id="settingsAiClaude" value="claude"/> Claude</label>
+        <label class="settings-toggle"><input type="checkbox" id="settingsAiGemini" value="gemini"/> Gemini</label>
+        <label class="settings-toggle"><input type="checkbox" id="settingsAiPerplexity" value="perplexity"/> Perplexity</label>
+        <label class="settings-toggle"><input type="checkbox" id="settingsAiCopilot" value="copilot"/> Copilot</label>
+      </div>
+      <label class="settings-label">Custom AI Prompt<textarea id="settingsAiPrompt" class="settings-input" rows="7" placeholder="Use the default prompt, or enter your own prompt. Your RISE task data is appended automatically."></textarea></label>
+      <button type="button" class="dash-btn" style="margin-top:8px" onclick="resetAiPrompt()">Reset Prompt to Original</button>
+    </div>
+    <div class="dash-modal-section">
       <div class="do-title">Data</div>
       <button class="dash-btn" onclick="exportAppData()">Export Data</button>
       <button class="dash-btn" onclick="triggerImportData()">Import Data</button>
@@ -3668,6 +3680,21 @@ window.handleSettingsImportReview=function(event){
   };reader.readAsText(file);
 };
 window.handleSettingsImport=function(event){if(typeof window.handleSettingsImportReview==='function')window.handleSettingsImportReview(event);};
+
+const AI_PROVIDERS={chatgpt:{name:'ChatGPT',url:'https://chat.openai.com'},claude:{name:'Claude',url:'https://claude.ai'},gemini:{name:'Gemini',url:'https://gemini.google.com'},perplexity:{name:'Perplexity',url:'https://www.perplexity.ai'},copilot:{name:'Copilot',url:'https://copilot.microsoft.com'}};
+function ensureAiSettings(){if(typeof S==='undefined')return null;if(!S.settings)S.settings={};if(!Array.isArray(S.settings.aiProviders))S.settings.aiProviders=Object.keys(AI_PROVIDERS);if(typeof S.settings.customAiPrompt!=='string')S.settings.customAiPrompt='';return S.settings;}
+const originalLoadSettingsToForm=window.loadSettingsToForm;
+window.loadSettingsToForm=function(){if(typeof originalLoadSettingsToForm==='function')originalLoadSettingsToForm();const settings=ensureAiSettings();if(!settings)return;const selected=settings.aiProviders||Object.keys(AI_PROVIDERS);Object.keys(AI_PROVIDERS).forEach(id=>{const input=document.getElementById('settingsAi'+id[0].toUpperCase()+id.slice(1));if(input)input.checked=selected.includes(id);});const prompt=document.getElementById('settingsAiPrompt');if(prompt)prompt.value=settings.customAiPrompt||'';};
+window.saveSettings=function(){const settings=ensureAiSettings();if(!settings)return;settings.dob=document.getElementById('settingsDob')?.value||'';settings.gender=document.getElementById('settingsGender')?.value||'';settings.weeklyBackupPrompt=document.getElementById('settingsWeeklyBackup')?.checked!==false;settings.monthlySummaryPrompt=document.getElementById('settingsMonthlyReport')?.checked!==false;settings.aiProviders=[];Object.keys(AI_PROVIDERS).forEach(id=>{const input=document.getElementById('settingsAi'+id[0].toUpperCase()+id.slice(1));if(input?.checked)settings.aiProviders.push(id);});settings.customAiPrompt=document.getElementById('settingsAiPrompt')?.value.trim()||'';saveState();closeSettingsModalDirect();showToast('Settings saved');};
+window.resetAiPrompt=function(){const settings=ensureAiSettings();if(settings)settings.customAiPrompt='';const input=document.getElementById('settingsAiPrompt');if(input)input.value='';if(typeof saveState==='function')saveState();showToast('AI prompt reset to original');};
+const originalGenerateAiPrompt=window.generateAiPrompt;
+window.generateAiPrompt=function(){if(typeof originalGenerateAiPrompt==='function')originalGenerateAiPrompt();const area=document.getElementById('aiPromptModalText');if(!area)return;const settings=ensureAiSettings();const custom=settings?.customAiPrompt?.trim();if(custom){const generated=area.value||'';area.value=custom+(generated?'\n\nCURRENT ASCENSION DATA:\n'+generated:'');}};
+window.copyAiPromptModal=function(){const area=document.getElementById('aiPromptModalText');if(!area?.value){showToast('No prompt available to copy.');return;}const copied=()=>{showToast('AI prompt copied to clipboard.');const container=document.getElementById('aiDestinations');const settings=ensureAiSettings();const selected=settings?.aiProviders||Object.keys(AI_PROVIDERS);if(container){container.innerHTML='<div style="font-family:var(--font-o);font-size:9px;font-weight:600;letter-spacing:0.16em;color:var(--ash);text-transform:uppercase;margin-bottom:8px">Prompt copied — open your AI</div><div style="display:grid;grid-template-columns:1fr 1fr;gap:6px">'+selected.map(id=>{const ai=AI_PROVIDERS[id];return ai?'<a class="ai-dest-btn" href="'+ai.url+'" target="_blank" rel="noopener"><span class="ai-dest-icon">↗</span>'+ai.name+'</a>':'';}).join('')+'</div>';container.style.display='block';}};if(navigator.clipboard?.writeText)navigator.clipboard.writeText(area.value).then(copied).catch(()=>showToast('Could not copy prompt.'));else{area.select();document.execCommand('copy');copied();}};
+
+window.renderWeekPlanner=function(){const shelf=document.getElementById('weekUnassignedShelf');const count=document.getElementById('weekUnassignedCount');if(!shelf||!count)return;const tasks=(typeof S==='object'?S.focusTasks||[]:[]).filter(t=>!t.archivedAt&&!t.completionType&&(!t.committedDay)&&(!t.committedDays||t.committedDays.length===0));count.textContent=tasks.length+' task'+(tasks.length===1?'':'s');shelf.innerHTML=tasks.length?tasks.map(t=>'<div class="week-shelf-card" data-task-id="'+String(t.id).replace(/[^a-zA-Z0-9_-]/g,'')+'"><div><div class="week-shelf-card-name">'+escapeHtml(t.name||'Untitled task')+'</div><div class="week-shelf-card-meta">'+(QUADRANT_LABELS?.[t.quadrant]||t.quadrant||'Unassigned')+'</div></div><button type="button" class="week-assign-btn" onclick="openAssignModalForTask(\''+String(t.id).replace(/[^a-zA-Z0-9_-]/g,'')+'\')">Assign</button></div>').join(''):'<div class="week-shelf-empty">No unassigned Focus tasks.</div>';};
+window.openAssignModalForTask=function(taskId){window.pendingWeekTaskId=taskId;const task=(typeof S==='object'?S.focusTasks||[]:[]).find(t=>t.id===taskId);if(!task)return;const modal=document.getElementById('weekAssignModal');const title=document.getElementById('weekAssignModalTitle');if(title)title.textContent='Assign: '+task.name;if(modal)modal.classList.add('open');};
+window.openAssignModal=function(){renderWeekPlanner();const first=(typeof S==='object'?S.focusTasks||[]:[]).find(t=>!t.committedDay&&(!t.committedDays||t.committedDays.length===0));if(first)openAssignModalForTask(first.id);else showToast('No unassigned Focus tasks.');};
+window.wamSave=function(){const task=(typeof S==='object'?S.focusTasks||[]:[]).find(t=>t.id===window.pendingWeekTaskId);const modal=document.getElementById('weekAssignModal');const selected=[...document.querySelectorAll('#wamDayRow .tef-day-btn.selected')].map(btn=>btn.textContent.trim());if(task){task.committedDays=selected;task.committedDay=selected[0]||null;task.modifiedAt=new Date().toISOString();saveState();renderWeekPlanner();renderFocusTasks?.();showToast('Task assigned to '+(selected.join(', ')||'the planner'));}modal?.classList.remove('open');};
 
 if(typeof window.toggleAddTaskForm !== 'function')window.toggleAddTaskForm=function(){
   const form=document.getElementById('tefForm');const button=document.getElementById('tefToggleBtn');if(!form||!button)return;
