@@ -4407,6 +4407,37 @@ renderFE();
 
 
 <script>
+if(typeof window.openSettingsModal !== 'function'){
+  window.openSettingsModal=function(){
+    let settings={};
+    try{settings=JSON.parse(localStorage.getItem('ascension_settings')||'{}')}catch(e){settings={};}
+    const modal=document.getElementById('settingsModal');
+    if(!modal)return;
+    document.getElementById('settingsDob').value=settings.dob||'';
+    document.getElementById('settingsGender').value=settings.gender||'';
+    document.getElementById('settingsWeeklyBackup').checked=settings.weeklyBackupPrompt!==false;
+    document.getElementById('settingsMonthlyReport').checked=settings.monthlySummaryPrompt!==false;
+    modal.classList.add('open');
+  };
+  window.closeSettingsModal=function(event){
+    const modal=document.getElementById('settingsModal');
+    if(modal&&event&&event.target===modal)modal.classList.remove('open');
+  };
+  window.closeSettingsModalDirect=function(){
+    document.getElementById('settingsModal')?.classList.remove('open');
+  };
+  window.saveSettings=function(){
+    const settings={
+      dob:document.getElementById('settingsDob')?.value||'',
+      gender:document.getElementById('settingsGender')?.value||'',
+      weeklyBackupPrompt:document.getElementById('settingsWeeklyBackup')?.checked!==false,
+      monthlySummaryPrompt:document.getElementById('settingsMonthlyReport')?.checked!==false
+    };
+    localStorage.setItem('ascension_settings',JSON.stringify(settings));
+    window.closeSettingsModalDirect();
+    if(typeof window.showToast==='function')showToast('Settings saved');
+  };
+}
 if(typeof window.switchView !== 'function'){
   window.switchView=function(id,button){
     const view=document.getElementById('view-'+id);
