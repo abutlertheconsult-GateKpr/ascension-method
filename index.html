@@ -2827,7 +2827,7 @@ function closeSettingsModal(e){if(e.target===document.getElementById('settingsMo
 function closeSettingsModalDirect(){document.getElementById('settingsModal').classList.remove('open');}
 function loadSettingsToForm(){document.getElementById('settingsDob').value=S.settings.dob||'';document.getElementById('settingsGender').value=S.settings.gender||'';document.getElementById('settingsWeeklyBackup').checked=Boolean(S.settings.weeklyBackupPrompt);document.getElementById('settingsMonthlyReport').checked=Boolean(S.settings.monthlySummaryPrompt);} 
 function saveSettings(){S.settings.dob=document.getElementById('settingsDob').value;S.settings.gender=document.getElementById('settingsGender').value;S.settings.weeklyBackupPrompt=document.getElementById('settingsWeeklyBackup').checked;S.settings.monthlySummaryPrompt=document.getElementById('settingsMonthlyReport').checked;saveState();showToast('Settings saved');closeSettingsModalDirect();}
-function exportAppData(){const data=JSON.stringify(S,null,2);const blob=new Blob([data],{type:'application/json'});const url=URL.createObjectURL(blob);const a=document.createElement('a');a.href=url;a.download='ascension-method-data.json';document.body.appendChild(a);a.click();document.body.removeChild(a);URL.revokeObjectURL(url);showToast('Data exported');}
+function exportAppData(){const now=new Date();const date=String(now.getFullYear())+'-'+String(now.getMonth()+1).padStart(2,'0')+'-'+String(now.getDate()).padStart(2,'0');const military=String(now.getHours()).padStart(2,'0')+String(now.getMinutes()).padStart(2,'0');const stamp=date+'-'+military;const exported={exportFormatVersion:2,exportedAt:now.toISOString(),exportedAtLocal:now.toLocaleString([], {year:'numeric',month:'long',day:'numeric',hour:'2-digit',minute:'2-digit',hour12:false}),appData:S};const blob=new Blob([JSON.stringify(exported,null,2)],{type:'application/json'});const url=URL.createObjectURL(blob);const a=document.createElement('a');a.href=url;a.download='ascension-method-'+stamp+'.json';document.body.appendChild(a);a.click();document.body.removeChild(a);URL.revokeObjectURL(url);showToast('Data exported as '+stamp+'.json');}
 function triggerImportData(){document.getElementById('settingsImportInput').click();}
 function handleSettingsImport(e){const file=e.target.files[0];if(!file)return;const reader=new FileReader();reader.onload=function(){try{const imported=JSON.parse(reader.result);if(imported&&typeof imported==='object'){S=imported;S.settings=S.settings||{dob:'',gender:'',weeklyBackupPrompt:true,monthlySummaryPrompt:true,lastWeeklyPrompt:null};saveState();renderStats();renderDashboard();syncAllTriangle();syncFromState('resist');showToast('Data imported');closeSettingsModalDirect();}else{showToast('Invalid import file');}}catch(err){showToast('Import failed');}};reader.readAsText(file);}
 function openBackupPromptModal(){document.getElementById('backupPromptModal').classList.add('open');}
@@ -4489,10 +4489,14 @@ if(typeof window.exportAppData !== 'function'){
   window.exportAppData=function(){
     let current={};
     try{current=JSON.parse(localStorage.getItem('ascension_v4')||'{}')}catch(e){current={};}
-    const exported={exportFormatVersion:2,exportedAt:new Date().toISOString(),appData:current};
+    const now=new Date();
+    const date=String(now.getFullYear())+'-'+String(now.getMonth()+1).padStart(2,'0')+'-'+String(now.getDate()).padStart(2,'0');
+    const military=String(now.getHours()).padStart(2,'0')+String(now.getMinutes()).padStart(2,'0');
+    const stamp=date+'-'+military;
+    const exported={exportFormatVersion:2,exportedAt:now.toISOString(),exportedAtLocal:now.toLocaleString([], {year:'numeric',month:'long',day:'numeric',hour:'2-digit',minute:'2-digit',hour12:false}),appData:current};
     const blob=new Blob([JSON.stringify(exported,null,2)],{type:'application/json'});
     const url=URL.createObjectURL(blob);
-    const link=document.createElement('a');link.href=url;link.download='ascension-method-'+new Date().toISOString().slice(0,10)+'.json';
+    const link=document.createElement('a');link.href=url;link.download='ascension-method-'+stamp+'.json';
     document.body.appendChild(link);link.click();document.body.removeChild(link);URL.revokeObjectURL(url);
   };
 }
