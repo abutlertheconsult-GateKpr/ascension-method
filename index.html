@@ -1215,7 +1215,7 @@ function loadState(){
     if(!p.daysActive)p.daysActive=[];if(p.streak==null)p.streak=0;if(!p.lastMonthlySummary)p.lastMonthlySummary=null;if(!p.settings)p.settings={dob:'',gender:'',weeklyBackupPrompt:true,monthlySummaryPrompt:true,lastWeeklyPrompt:null};
     Object.keys(p.days).forEach(dk=>{
       const day=p.days[dk];
-      if(!day||!day.taskIds){p.days[dk]=freshDay();return;}
+      if(!day||(!day.taskIds&&!day.tasks)){p.days[dk]=freshDay();return;}
       if(!day.reflection)day.reflection={q1:'',q2:'',q3:'',q4:'',q5:'',saved:false};
     });
     Object.keys(p.library||{}).forEach(id=>{
@@ -4503,8 +4503,20 @@ if(typeof window.exportAppData !== 'function'){
 if(typeof window.triggerImportData !== 'function')window.triggerImportData=function(){document.getElementById('settingsImportInput')?.click();};
 if(typeof window.closeImportReview !== 'function')window.closeImportReview=function(event){const modal=document.getElementById('importReviewModal');if(modal&&event&&event.target===modal)modal.classList.remove('open');};
 if(typeof window.rejectImportReview !== 'function')window.rejectImportReview=function(){document.getElementById('importReviewModal')?.classList.remove('open');pendingImportData=null;pendingImportFileName='';const input=document.getElementById('settingsImportInput');if(input)input.value='';};
-if(typeof window.confirmImportReview !== 'function')window.confirmImportReview=function(){if(!pendingImportData)return;localStorage.setItem('ascension_v4',JSON.stringify(pendingImportData));rejectImportReview();location.reload();};
-if(typeof window.handleSettingsImport !== 'function')window.handleSettingsImport=function(event){
+if(typeof window.confirmImportReview !== 'function')window.confirmImportReview=function(){
+  if(!pendingImportData)return;
+  const imported=pendingImportData;
+  if(typeof window.saveState==='function'){
+    try{if(typeof S!=='undefined')S=imported;}catch(e){}
+  }
+  imported.settings=imported.settings||{dob:'',gender:'',weeklyBackupPrompt:true,monthlySummaryPrompt:true,lastWeeklyPrompt:null};
+  localStorage.setItem('ascension_v4',JSON.stringify(imported));
+  try{if(typeof S!=='undefined'){S=imported;if(typeof saveState==='function')saveState();if(typeof renderStats==='function')renderStats();if(typeof renderDashboard==='function')renderDashboard();if(typeof syncAllTriangle==='function')syncAllTriangle();if(typeof syncFromState==='function')syncFromState('resist');}}catch(e){}
+  rejectImportReview();
+  if(typeof window.showToast==='function')showToast('Data imported');
+  location.reload();
+};
+window.handleSettingsImportReview=function(event){
   const file=event.target.files&&event.target.files[0];if(!file)return;pendingImportFileName=file.name;
   const reader=new FileReader();reader.onload=function(){
     try{
@@ -4526,6 +4538,7 @@ if(typeof window.handleSettingsImport !== 'function')window.handleSettingsImport
     }catch(error){if(typeof window.showToast==='function')showToast('Invalid import file');else alert('Invalid import file');}
   };reader.readAsText(file);
 };
+window.handleSettingsImport=function(event){if(typeof window.handleSettingsImportReview==='function')window.handleSettingsImportReview(event);};
 
 if(typeof window.switchView !== 'function'){
   window.switchView=function(id,button){
