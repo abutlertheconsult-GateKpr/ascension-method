@@ -63,9 +63,9 @@ body{font-family:var(--font-b);background:var(--off-white);color:var(--black);mi
 .stat-block-lbl{font-family:var(--font-o);font-size:10px;font-weight:400;letter-spacing:0.14em;color:var(--mid);text-transform:uppercase;margin-top:2px}
 
 /* NAV */
-.nav{display:flex;background:var(--black);border-bottom:1px solid #1a1a1a;overflow-x:auto}
+.nav{display:flex;background:var(--black);border-bottom:1px solid #1a1a1a;overflow-x:auto;position:relative;z-index:20;pointer-events:auto}
 .nav::-webkit-scrollbar{height:0}
-.nav-btn{flex-shrink:0;background:none;border:none;border-bottom:2px solid transparent;padding:9px 10px;font-family:var(--font-o);font-size:12px;letter-spacing:0.14em;color:rgba(255,255,255,0.6);cursor:pointer;text-transform:uppercase;margin-bottom:-1px;transition:all 0.14s;white-space:nowrap}
+.nav-btn{flex-shrink:0;background:none;border:none;border-bottom:2px solid transparent;padding:9px 10px;font-family:var(--font-o);font-size:12px;letter-spacing:0.14em;color:rgba(255,255,255,0.6);cursor:pointer;text-transform:uppercase;margin-bottom:-1px;transition:all 0.14s;white-space:nowrap;touch-action:manipulation;-webkit-tap-highlight-color:transparent}
 .nav-btn:hover{color:rgba(255,255,255,0.85)}
 .nav-btn.active{color:var(--rust-hi);border-bottom-color:var(--rust)}
 
@@ -611,12 +611,12 @@ body{font-family:var(--font-b);background:var(--off-white);color:var(--black);mi
 
 <!-- NAV -->
 <nav class="nav">
-  <button class="nav-btn active" onclick="switchView('dashboard',this)">Dashboard</button>
-  <button class="nav-btn" id="nav-focus" onclick="switchView('focus',this)">Focus</button>
-  <button class="nav-btn" onclick="switchView('today',this)">Today</button>
-  <button class="nav-btn" id="nav-reflect" onclick="switchView('reflect',this)">Reflect</button>
-  <button class="nav-btn" onclick="switchView('library',this)">Library</button>
-  <button class="nav-btn" onclick="switchView('archive',this)">Archive</button>
+  <button type="button" class="nav-btn active" data-view="dashboard">Dashboard</button>
+  <button type="button" class="nav-btn" id="nav-focus" data-view="focus">Focus</button>
+  <button type="button" class="nav-btn" data-view="today">Today</button>
+  <button type="button" class="nav-btn" id="nav-reflect" data-view="reflect">Reflect</button>
+  <button type="button" class="nav-btn" data-view="library">Library</button>
+  <button type="button" class="nav-btn" data-view="archive">Archive</button>
 </nav>
 
 <!-- ═══ VIEW: TODAY ═══ -->
@@ -1883,7 +1883,7 @@ function executeSendToToday(taskId,phase){
   saveState();
   t.inProgress=PHASE_LABELS[phase];t.modifiedAt=new Date().toISOString();saveState();
   syncAllTriangle();syncFromState(phase);
-  const navToday=document.querySelector('.nav-btn[onclick*="today"]');
+  const navToday=document.querySelector('.nav-btn[data-view="today"]');
   switchView('today',navToday);
   selectTask(phase);
   showToast(t.name+' sent to '+PHASE_LABELS[phase]);
@@ -2064,7 +2064,7 @@ function loadTaskFromLibrary(recId){
   }
   day.activeIdx[rec.phase]=day.tasks[rec.phase].indexOf(recId);
   saveState();
-  const navToday=document.querySelector('.nav-btn[onclick*="today"]');
+  const navToday=document.querySelector('.nav-btn[data-view="today"]');
   switchView('today',navToday);
   selectTask(rec.phase);
   showToast(PHASE_LABELS[rec.phase]+' task loaded');
@@ -3348,12 +3348,36 @@ renderFE();
 
 
 <script>
-if('serviceWorker' in navigator){
-  window.addEventListener('load', () => {
-    navigator.serviceWorker.register('/ascension-method/service-worker.js')
-      .then(reg => console.log('SW registered'))
-      .catch(err => console.log('SW error:', err));
+const nav = document.querySelector('.nav');
+if(nav){
+  nav.addEventListener('click', event=>{
+    const button=event.target.closest('.nav-btn[data-view]');
+    if(button) switchView(button.dataset.view, button);
   });
+  nav.addEventListener('pointerup', event=>{
+    if(event.pointerType==='touch'||event.pointerType==='pen'){
+      const button=event.target.closest('.nav-btn[data-view]');
+      if(button){
+        switchView(button.dataset.view, button);
+        event.preventDefault();
+      }
+    }
+  });
+}
+
+if('serviceWorker' in navigator){
+  const isLocalPreview=['localhost','127.0.0.1'].includes(location.hostname);
+  if(isLocalPreview){
+    navigator.serviceWorker.getRegistrations().then(registrations=>{
+      registrations.forEach(registration=>registration.unregister());
+    });
+  }else{
+    window.addEventListener('load', () => {
+      navigator.serviceWorker.register('./service-worker.js')
+        .then(reg => console.log('SW registered'))
+        .catch(err => console.log('SW error:', err));
+    });
+  }
 }
 </script>
 </body>

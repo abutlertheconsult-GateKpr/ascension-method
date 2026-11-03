@@ -3,12 +3,13 @@
 // Caches all app files for full offline use after first load
 // ============================================================
 
-const CACHE_NAME = 'ascension-v5.S01.L01.F01';
+const CACHE_NAME = 'ascension-v6.S01.L01.F01';
+const BASE_PATH = new URL('.', self.location.href).pathname.replace(/\/$/, '');
 
 // Files to cache on install
 const ASSETS = [
-  '/ascension-method/index.html',
-  '/ascension-method/manifest.json'
+  BASE_PATH + '/index.html',
+  BASE_PATH + '/manifest.json'
 ];
 
 // INSTALL — cache core files
@@ -41,6 +42,6 @@ self.addEventListener('fetch', event => {
         caches.open(CACHE_NAME).then(cache => cache.put(event.request, clone));
         return response;
       });
-    }).catch(() => caches.match('/index.html'))
+    }).catch(() => caches.match(BASE_PATH + '/index.html'))
   );
 });
