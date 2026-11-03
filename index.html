@@ -2059,20 +2059,46 @@ function sendToToday(taskId,phase){
 let pendingSendTask=null;
 function executeSendToToday(taskId,phase){
   const t=S.focusTasks.find(x=>x.id===taskId);if(!t)return;
-  // Create a fresh task record pre-filled with focus task name/deadline
   const k=getTodayKey();
-  const rec=freshTaskRecord(phase);
-  rec.name=t.name;rec.deadline=t.deadline||'';
-  S.library[rec.id]=rec;
-  S.days[k].tasks[phase].push(rec.id);
-  S.days[k].activeIdx[phase]=S.days[k].tasks[phase].length-1;
-  saveState();
-  t.inProgress=PHASE_LABELS[phase];t.modifiedAt=new Date().toISOString();saveState();
-  syncAllTriangle();syncFromState(phase);
+  const day=S.days[k];if(!day)return;
+
+  let rec=t.libraryId?S.library[t.libraryId]:null;
+  if(!rec){
+    rec=Object.values(S.library||{}).find(r=>r&&r.focusTaskId===taskId);
+  }
+
+  if(rec){
+    // Move the same Ascent record to the destination phase.
+    ['resist','grow','momentum'].forEach(id=>{
+      day.tasks[id]=(day.tasks[id]||[]).filter(recId=>recId!==rec.id);
+      if(day.activeIdx&&day.activeIdx[id]!=null){
+        const remaining=day.tasks[id].length;
+        if(day.activeIdx[id]>=remaining)day.activeIdx[id]=Math.max(0,remaining-1);
+      }
+    });
+    rec.phase=phase;
+    rec.modifiedAt=new Date().toISOString();
+    rec.name=t.name||rec.name||'';
+    rec.deadline=t.deadline||rec.deadline||'';
+    rec.focusTaskId=taskId;
+    S.library[rec.id]=rec;
+  }else{
+    rec=freshTaskRecord(phase);
+    rec.name=t.name;rec.deadline=t.deadline||'';rec.focusTaskId=taskId;
+    S.library[rec.id]=rec;
+  }
+
+  t.libraryId=rec.id;
+  day.tasks[phase]=(day.tasks[phase]||[]).filter(recId=>recId!==rec.id);
+  day.tasks[phase].push(rec.id);
+  day.activeIdx[phase]=day.tasks[phase].length-1;
+
+  t.inProgress=PHASE_LABELS[phase];t.modifiedAt=new Date().toISOString();
+  saveState();syncAllTriangle();syncFromState(phase);
   const navToday=document.querySelector('.nav-btn[data-view="today"]');
   switchView('today',navToday);
   selectTask(phase);
-  showToast(t.name+' sent to '+PHASE_LABELS[phase]);
+  showToast(t.name+' moved to '+PHASE_LABELS[phase]);
 }
 function completeFocusTask(id,how){
   const idx=S.focusTasks.findIndex(t=>t.id===id);if(idx===-1)return;

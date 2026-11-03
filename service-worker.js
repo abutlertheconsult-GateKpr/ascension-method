@@ -3,7 +3,7 @@
 // Caches all app files for full offline use after first load
 // ============================================================
 
-const CACHE_NAME = 'ascension-v16.S01.L01.F01';
+const CACHE_NAME = 'ascension-v17.S01.L01.F01';
 const BASE_PATH = new URL('.', self.location.href).pathname.replace(/\/$/, '');
 
 // Files to cache on install
