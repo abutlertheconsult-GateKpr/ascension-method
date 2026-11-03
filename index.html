@@ -2956,6 +2956,8 @@ function closeDayModalDirect(){document.getElementById('dayModal').classList.rem
 
 /* ══ NAV ══ */
 function switchView(id,btn){
+  const target=document.getElementById('view-'+id);
+  if(!target)return;
   document.querySelectorAll('.view').forEach(v=>v.classList.remove('active'));
   document.querySelectorAll('.nav-btn').forEach(b=>b.classList.remove('active'));
   document.getElementById('view-'+id).classList.add('active');
@@ -4407,18 +4409,25 @@ renderFE();
 <script>
 const nav=document.querySelector('.nav');
 if(nav){
+  let ignoreNextClick=false;
+  nav.addEventListener('pointerdown',event=>{
+    const button=event.target.closest('.nav-btn[data-view]');
+    if(!button)return;
+    switchView(button.dataset.view,button);
+    if(event.pointerType==='touch'||event.pointerType==='pen'){
+      ignoreNextClick=true;
+      setTimeout(()=>ignoreNextClick=false,700);
+      event.preventDefault();
+    }
+  });
   nav.addEventListener('click',event=>{
+    if(ignoreNextClick){
+      ignoreNextClick=false;
+      event.preventDefault();
+      return;
+    }
     const button=event.target.closest('.nav-btn[data-view]');
     if(button) switchView(button.dataset.view,button);
-  });
-  nav.addEventListener('pointerup',event=>{
-    if(event.pointerType==='touch'||event.pointerType==='pen'){
-      const button=event.target.closest('.nav-btn[data-view]');
-      if(button){
-        switchView(button.dataset.view,button);
-        event.preventDefault();
-      }
-    }
   });
 }
 
